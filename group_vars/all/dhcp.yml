@@ -1,0 +1,21 @@
+# Variables de configuration
+dhcp_domain_name: "test.lan"
+dhcp_dns_servers: "1.1.1.1, 1.0.0.1"
+dhcp_subnet: "192.168.1.0"
+dhcp_netmask: "255.255.255.0"
+dhcp_range_start: "192.168.1.240"
+dhcp_range_end: "192.168.1.250"
+dhcp_routers: "192.168.1.1"
+dhcp_broadcast_address: "192.168.1.255"
+
+# Variables de configuration pour IPv6
+dhcp6_subnet: "2a01::"
+dhcp6_prefix: "/64"
+dhcp6_range_start: "2a01::10"
+dhcp6_range_end: "2a01::100"
+dhcp6_name_servers: "fec0::1"
+dhcp6_domain_search: "test.lan"
+
+# PXE CONFIGURATION
+pxe_server_ip: "192.168.1.14"
+tftp_root: "/srv/tftp"

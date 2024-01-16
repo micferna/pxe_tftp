@@ -1,0 +1,33 @@
+---
+- name: Install DHCP packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - isc-dhcp-server
+
+- name: Configure DHCP for IPv4
+  template:
+    src: dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+  notify: Restart DHCP service
+
+- name: Configure DHCP interface for IPv4
+  lineinfile:
+    path: /etc/default/isc-dhcp-server
+    regexp: "^INTERFACESv4="
+    line: "INTERFACESv4={{ ansible_default_ipv4.interface }}"
+  notify: Restart DHCP service
+
+- name: Configure DHCP for IPv6
+  template:
+    src: dhcpd6.conf.j2
+    dest: /etc/dhcp/dhcpd6.conf
+  notify: Restart DHCP service
+
+- name: Configure DHCP interface for IPv6
+  lineinfile:
+    path: /etc/default/isc-dhcp-server
+    regexp: "^INTERFACESv6="
+    line: "INTERFACESv6={{ ansible_default_ipv6.interface }}"
+  notify: Restart DHCP service

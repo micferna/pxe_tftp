@@ -1,0 +1,14 @@
+option domain-name "{{ dhcp_domain_name }}";
+option domain-name-servers {{ dhcp_dns_servers }};
+default-lease-time 600;
+max-lease-time 7200;
+ddns-update-style none;
+authoritative;
+subnet {{ dhcp_subnet }} netmask {{ dhcp_netmask }} {
+  range {{ dhcp_range_start }} {{ dhcp_range_end }};
+  option subnet-mask {{ dhcp_netmask }};
+  option routers {{ dhcp_routers }};
+  option broadcast-address {{ dhcp_broadcast_address }};
+  next-server {{ pxe_server_ip }};
+  filename "pxelinux.0";
+}

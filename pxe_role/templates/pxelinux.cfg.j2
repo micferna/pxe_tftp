@@ -1,0 +1,14 @@
+DEFAULT menu.c32
+PROMPT 0
+MENU TITLE PXE Menu
+TIMEOUT 300
+
+LABEL Debian 12 Install
+  MENU LABEL ^Install Debian 12
+  KERNEL debian-installer/amd64/linux
+  APPEND initrd=debian-installer/amd64/initrd.gz
+
+LABEL Ubuntu Install
+  MENU LABEL ^Install Ubuntu
+  KERNEL ubuntu-installer/amd64/linux
+  APPEND initrd=ubuntu-installer/amd64/initrd.gz

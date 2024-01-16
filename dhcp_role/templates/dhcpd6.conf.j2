@@ -1,0 +1,5 @@
+subnet6 {{ dhcp6_subnet }}{{ dhcp6_prefix }} {
+  range6 {{ dhcp6_range_start }} {{ dhcp6_range_end }};
+  option dhcp6.name-servers {{ dhcp6_name_servers }};
+  option dhcp6.domain-search "{{ dhcp6_domain_search }}";
+}

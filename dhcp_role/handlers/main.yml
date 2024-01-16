@@ -1,0 +1,7 @@
+---
+- name: Restart DHCP service
+  systemd:
+    name: isc-dhcp-server
+    state: restarted
+  async: 60
+  poll: 0

@@ -1,0 +1,5 @@
+---
+- hosts: pxe_servers
+  roles:
+    - dhcp_role
+    - pxe_role
