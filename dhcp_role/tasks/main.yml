@@ -1,10 +1,7 @@
----
 - name: Install DHCP packages
   apt:
-    name: "{{ item }}"
+    name: isc-dhcp-server
     state: present
-  with_items:
-    - isc-dhcp-server
 
 - name: Configure DHCP for IPv4
   template:
