@@ -1,61 +1,53 @@
----
-- name: Install TFTP packages
+- name: Install TFTP and PXE packages
   apt:
-    name: "{{ item }}"
+    name: "{{ packages }}"
     state: present
-  with_items:
-    - tftpd-hpa
-    - syslinux
-    - pxelinux
+  vars:
+    packages:
+      - tftpd-hpa
+      - syslinux
+      - pxelinux
 
-- name: Create PXE directory
+- name: Create directories for PXE
   file:
-    path: "{{ tftp_root }}"
+    path: "{{ item }}"
     state: directory
+  loop:
+    - "{{ tftp_root }}"
+    - "{{ tftp_root }}/debian-installer/amd64"
+    - "{{ tftp_root }}/ubuntu-installer/amd64"
+    - "{{ tftp_root }}/pxelinux.cfg"
 
 - name: Copy PXE files
   copy:
     src: "{{ item.src }}"
     dest: "{{ tftp_root }}/{{ item.dest }}"
     remote_src: yes
-  with_items:
-    - { src: "/usr/lib/PXELINUX/pxelinux.0", dest: "pxelinux.0" }
-    - { src: "/usr/lib/syslinux/modules/bios/ldlinux.c32", dest: "ldlinux.c32" }
-    - { src: "/usr/lib/syslinux/modules/bios/menu.c32", dest: "menu.c32" }
-    - { src: "/usr/lib/syslinux/modules/bios/libutil.c32", dest: "libutil.c32" }
-    - { src: "/usr/lib/syslinux/modules/bios/libmenu.c32", dest: "libmenu.c32" }
+  loop:
+    - src: "/usr/lib/PXELINUX/pxelinux.0"
+      dest: "pxelinux.0"
+    - src: "/usr/lib/syslinux/modules/bios/ldlinux.c32"
+      dest: "ldlinux.c32"
+    - src: "/usr/lib/syslinux/modules/bios/menu.c32"
+      dest: "menu.c32"
+    - src: "/usr/lib/syslinux/modules/bios/libutil.c32"
+      dest: "libutil.c32"
+    - src: "/usr/lib/syslinux/modules/bios/libmenu.c32"
+      dest: "libmenu.c32"
 
-- name: Create PXE Debian directory
-  file:
-    path: "{{ tftp_root }}/debian-installer/amd64"
-    state: directory
-
-- name: Download PXE Debian files
+- name: Download installer files for Debian and Ubuntu
   get_url:
     url: "{{ item.url }}"
     dest: "{{ tftp_root }}/{{ item.dest }}"
-  with_items:
-    - { url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux", dest: "debian-installer/amd64/linux" }
-    - { url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz", dest: "debian-installer/amd64/initrd.gz" }
-
-- name: Create PXE Ubuntu directory
-  file:
-    path: "{{ tftp_root }}/ubuntu-installer/amd64"
-    state: directory
-
-- name: Download PXE Ubuntu files
-  get_url:
-    url: "{{ item.url }}"
-    dest: "{{ tftp_root }}/{{ item.dest }}"
-  with_items:
-    - { url: "http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux", dest: "ubuntu-installer/amd64/linux" }
-    - { url: "http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/initrd.gz", dest: "ubuntu-installer/amd64/initrd.gz" }
-
-
-- name: Create PXE menu directory
-  file:
-    path: "{{ tftp_root }}/pxelinux.cfg"
-    state: directory
+  loop:
+    - url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux"
+      dest: "debian-installer/amd64/linux"
+    - url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz"
+      dest: "debian-installer/amd64/initrd.gz"
+    - url: "http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux"
+      dest: "ubuntu-installer/amd64/linux"
+    - url: "http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/initrd.gz"
+      dest: "ubuntu-installer/amd64/initrd.gz"
 
 - name: Configure PXE menu
   template:
