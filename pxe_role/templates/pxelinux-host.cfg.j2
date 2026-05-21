@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+# Per-machine BIOS boot profile for {{ item.name }} ({{ item.mac }}).
+DEFAULT install
+PROMPT 0
+TIMEOUT 1
+
+LABEL install
+  MENU LABEL Install {{ item.os }} on {{ item.name }}
+  KERNEL {{ item.os }}-installer/amd64/linux
+  APPEND initrd={{ item.os }}-installer/amd64/initrd.gz{% if item.autoinstall | default(false) | bool %} auto=true priority=critical preseed/url=http://{{ pxe_server_ip }}/preseed/preseed-{{ item.os }}.cfg{% endif %}

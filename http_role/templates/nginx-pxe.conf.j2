@@ -1,10 +1,12 @@
 # {{ ansible_managed }}
+# Serves the TFTP/boot tree over HTTP: preseed files, UEFI HTTP Boot images
+# and kernels, plus the generated status page.
 server {
     listen {{ http_listen_port }} default_server;
     listen [::]:{{ http_listen_port }} default_server;
 
     server_name _;
-    root {{ http_root }};
+    root {{ tftp_root }};
     autoindex off;
 
     location / {

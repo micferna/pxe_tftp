@@ -23,8 +23,11 @@ dhcp6_name_servers: "2606:4700:4700::1111"
 dhcp6_domain_search: "test.lan"
 
 # --- PXE server ---
-# IP address clients use to reach this TFTP server (DHCP next-server).
+# IP address clients use to reach this server (DHCP next-server / HTTP host).
 pxe_server_ip: "192.168.1.14"
+
+# Root directory served over TFTP and HTTP (shared by pxe_role and http_role).
+tftp_root: /srv/tftp
 
 # Boot filenames served per firmware type. Shared by dhcp_role (advertised
 # over DHCP) and pxe_role (produced on disk) -- keep both in sync.
@@ -33,7 +36,27 @@ pxe_server_ip: "192.168.1.14"
 pxe_bootfile_bios: "pxelinux.0"
 pxe_bootfile_uefi: "boot/grub/x86_64-efi/core.efi"
 
-# Automated install via preseed. OFF by default: it erases the target disk
-# without confirmation. When true, http_role serves the preseed files and the
-# boot menus expose dedicated "[AUTOMATED]" entries.
+# --- Declarative fleet (per-machine provisioning) ---
+# Each entry pins a known machine to a fixed IP and a boot profile.
+# Kea gets a host reservation; the machine gets its own PXE boot config
+# (pxelinux.cfg/01-<mac> and grub/host-<mac>.cfg).
+#   os:          debian | ubuntu
+#   autoinstall: true => unattended preseed install (requires
+#                pxe_enable_autoinstall: true). Erases the disk.
+pxe_fleet: []
+# Example:
+#   - name: web01
+#     mac: "aa:bb:cc:dd:ee:01"
+#     ip: "192.168.1.50"
+#     os: debian
+#     autoinstall: true
+
+# --- Optional features ---
+# Automated install via preseed. Erases the target disk without confirmation.
 pxe_enable_autoinstall: false
+# Universal boot menu: chainload netboot.xyz (huge catalogue of OSes + tools).
+pxe_enable_netbootxyz: true
+# UEFI HTTP Boot for HTTP-capable firmware. Validate on real hardware.
+pxe_enable_http_boot: false
+# Kea Control Agent (REST API) + a generated status web page.
+pxe_enable_dashboard: false

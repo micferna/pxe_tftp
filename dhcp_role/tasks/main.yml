@@ -10,6 +10,43 @@
     update_cache: true
     cache_valid_time: 3600
 
+# Done before the DHCPv4 config so the lease_cmds hook path is known when the
+# template is rendered.
+- name: Set up the Kea Control Agent (REST API for the dashboard)
+  when: pxe_enable_dashboard | bool
+  block:
+    - name: Install the Kea Control Agent
+      ansible.builtin.apt:
+        name: kea-ctrl-agent
+        state: present
+
+    - name: Locate the Kea lease_cmds hook library
+      ansible.builtin.find:
+        paths: /usr/lib
+        patterns: libdhcp_lease_cmds.so
+        recurse: true
+      register: kea_lease_hook_find
+
+    - name: Record the lease_cmds hook path
+      ansible.builtin.set_fact:
+        kea_lease_hook: "{{ (kea_lease_hook_find.files | first).path if kea_lease_hook_find.files else '' }}"
+
+    - name: Configure the Kea Control Agent
+      ansible.builtin.template:
+        src: kea-ctrl-agent.conf.j2
+        dest: /etc/kea/kea-ctrl-agent.conf
+        owner: root
+        group: root
+        mode: "0644"
+        validate: "/usr/sbin/kea-ctrl-agent -t %s"
+      notify: Restart Kea Control Agent
+
+    - name: Ensure the Kea Control Agent is enabled and running
+      ansible.builtin.systemd:
+        name: kea-ctrl-agent
+        enabled: true
+        state: started
+
 - name: Configure Kea DHCPv4
   ansible.builtin.template:
     src: kea-dhcp4.conf.j2

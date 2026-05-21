@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Generate a static HTML status page from the Kea Control Agent REST API.
+
+Configuration is read from the environment:
+  KEA_CA_URL         Kea Control Agent base URL (default http://127.0.0.1:8000/)
+  KEA_STATUS_OUTPUT  path of the HTML file to write (default /srv/tftp/status.html)
+
+The script never fails the caller: API errors are rendered onto the page so a
+systemd timer can run it unattended.
+"""
+import datetime
+import html
+import json
+import os
+import urllib.request
+
+CA_URL = os.environ.get("KEA_CA_URL", "http://127.0.0.1:8000/")
+OUTPUT = os.environ.get("KEA_STATUS_OUTPUT", "/srv/tftp/status.html")
+
+
+def kea_command(command):
+    """Send a command to the Kea Control Agent and return its first response."""
+    payload = json.dumps({"command": command, "service": ["dhcp4"]}).encode()
+    request = urllib.request.Request(
+        CA_URL, data=payload, headers={"Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(request, timeout=5) as response:
+        return json.load(response)[0]
+
+
+def collect_leases():
+    """Return (leases, error). lease4-get-all needs the lease_cmds hook."""
+    try:
+        result = kea_command("lease4-get-all")
+    except Exception as exc:  # noqa: BLE001 - surfaced on the page
+        return [], str(exc)
+    if result.get("result", 1) != 0:
+        return [], result.get("text", "lease query unavailable")
+    return result.get("arguments", {}).get("leases", []), None
+
+
+def render(leases, error):
+    generated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if error:
+        status = '<p class="err">Kea API: {}</p>'.format(html.escape(error))
+    else:
+        status = "<p>{} active lease(s).</p>".format(len(leases))
+
+    rows = ""
+    for lease in sorted(leases, key=lambda item: item.get("ip-address", "")):
+        rows += "<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(lease.get("ip-address", ""))),
+            html.escape(str(lease.get("hw-address", ""))),
+            html.escape(str(lease.get("hostname") or "-")),
+        )
+    if not rows:
+        rows = '<tr><td colspan="3">No active lease.</td></tr>'
+
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="60">
+<title>PXE / DHCP status</title>
+<style>
+body{{font-family:system-ui,sans-serif;margin:2rem;background:#0f172a;color:#e2e8f0}}
+h1{{font-size:1.3rem}}
+table{{border-collapse:collapse;width:100%;margin-top:1rem}}
+th,td{{border:1px solid #334155;padding:.4rem .7rem;text-align:left}}
+th{{background:#1e293b}}
+.err{{color:#f87171}}
+small{{color:#94a3b8}}
+</style>
+</head>
+<body>
+<h1>PXE / DHCP status</h1>
+{status}
+<table>
+<tr><th>IP address</th><th>MAC address</th><th>Hostname</th></tr>
+{rows}
+</table>
+<p><small>Generated {generated}</small></p>
+</body>
+</html>
+""".format(status=status, rows=rows, generated=html.escape(generated))
+
+
+def main():
+    leases, error = collect_leases()
+    page = render(leases, error)
+    with open(OUTPUT, "w", encoding="utf-8") as handle:
+        handle.write(page)
+
+
+if __name__ == "__main__":
+    main()

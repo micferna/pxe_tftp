@@ -10,3 +10,8 @@
   ansible.builtin.systemd:
     name: kea-dhcp6-server
     state: restarted
+
+- name: Restart Kea Control Agent
+  ansible.builtin.systemd:
+    name: kea-ctrl-agent
+    state: restarted

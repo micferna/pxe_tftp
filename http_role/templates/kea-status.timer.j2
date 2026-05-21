@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Refresh the PXE/DHCP status page
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec={{ dashboard_refresh }}
+
+[Install]
+WantedBy=timers.target

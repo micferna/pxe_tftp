@@ -1,8 +1,7 @@
 ---
 # Default values for pxe_role.
-
-# Root directory served over TFTP. Must match tftpd-hpa's TFTP_DIRECTORY.
-tftp_root: /srv/tftp
+# tftp_root, pxe_server_ip, pxe_fleet and the pxe_enable_* feature flags are
+# defined in group_vars/all/dhcp.yml.
 
 # Packages for a BIOS + UEFI PXE server.
 # grub-efi-amd64-bin provides the modules used to build the UEFI netboot image.
@@ -30,6 +29,17 @@ pxe_secureboot_files:
   - src: /usr/lib/grub/x86_64-efi-signed/grubnetx64.efi.signed
     dest: grubx64.efi
 
+# Universal boot menu: chainload netboot.xyz, which offers a large catalogue
+# of OS installers and rescue tools (memtest, SystemRescue, Clonezilla, ...).
+pxe_netbootxyz_files:
+  - url: "https://boot.netboot.xyz/ipxe/netboot.xyz.lkrn"
+    dest: "netboot.xyz.lkrn"
+  - url: "https://boot.netboot.xyz/ipxe/netboot.xyz.efi"
+    dest: "netboot.xyz.efi"
+
+# Filename of the GRUB image built for UEFI HTTP Boot.
+pxe_httpboot_image: "grubnetx64-http.efi"
+
 # tftpd-hpa daemon options.
 # --secure chroots into TFTP_DIRECTORY; --create is intentionally omitted so
 # the service stays strictly read-only.
@@ -50,6 +60,7 @@ pxe_tftp_dirs:
   - pxelinux.cfg
   - boot/grub
   - grub
+  - preseed
   - debian-installer/amd64
   - ubuntu-installer/amd64
 

@@ -1,10 +1,10 @@
 ---
 # Default values for http_role.
-# This role only does anything when pxe_enable_autoinstall is true
-# (see group_vars/all/dhcp.yml).
+# http_role serves the TFTP root (tftp_root) over HTTP. It only does something
+# when at least one web feature is enabled: pxe_enable_autoinstall,
+# pxe_enable_http_boot or pxe_enable_dashboard.
 
-# Document root and listening port for the provisioning web server.
-http_root: /var/www/pxe
+# Port the provisioning web server listens on.
 http_listen_port: 80
 
 # Automated-install (preseed) answers.
@@ -22,7 +22,7 @@ preseed_user_fullname: "PXE User"
 preseed_user_password: "changeme"
 
 # Distributions a preseed file is generated for. Each produces the file
-# preseed-<name>.cfg under http_root.
+# preseed/preseed-<name>.cfg under the TFTP root.
 preseed_targets:
   - name: debian
     mirror_hostname: deb.debian.org
@@ -30,3 +30,6 @@ preseed_targets:
   - name: ubuntu
     mirror_hostname: archive.ubuntu.com
     mirror_directory: /ubuntu
+
+# How often the status dashboard page is regenerated.
+dashboard_refresh: "1min"

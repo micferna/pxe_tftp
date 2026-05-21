@@ -43,6 +43,16 @@
     mode: "{{ tftp_file_mode }}"
   loop: "{{ pxe_installer_files }}"
 
+- name: Download netboot.xyz bootloaders (universal boot menu)
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ tftp_root }}/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  loop: "{{ pxe_netbootxyz_files }}"
+  when: pxe_enable_netbootxyz | bool
+
 - name: Configure the legacy BIOS (pxelinux) boot menu
   ansible.builtin.template:
     src: pxelinux.cfg.j2
@@ -50,6 +60,17 @@
     owner: root
     group: root
     mode: "{{ tftp_file_mode }}"
+
+- name: Generate per-machine BIOS boot configs for the fleet
+  ansible.builtin.template:
+    src: pxelinux-host.cfg.j2
+    dest: "{{ tftp_root }}/pxelinux.cfg/01-{{ item.mac | lower | replace(':', '-') }}"
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  loop: "{{ pxe_fleet }}"
+  loop_control:
+    label: "{{ item.name }}"
 
 - name: Generate the GRUB network boot image for UEFI clients
   ansible.builtin.command:
@@ -66,6 +87,29 @@
     mode: "{{ tftp_file_mode }}"
   loop: "{{ ['boot/grub'] + (['grub'] if pxe_secureboot | bool else []) }}"
   when: pxe_enable_uefi | bool
+
+- name: Generate per-machine UEFI boot configs for the fleet
+  ansible.builtin.template:
+    src: grub-host.cfg.j2
+    dest: "{{ tftp_root }}/grub/host-{{ item.mac | lower }}.cfg"
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  loop: "{{ pxe_fleet }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: pxe_enable_uefi | bool
+
+- name: Build the GRUB image for UEFI HTTP Boot
+  ansible.builtin.command:
+    cmd: >-
+      grub-mkimage -O x86_64-efi
+      -o {{ tftp_root }}/{{ pxe_httpboot_image }}
+      -p (http,{{ pxe_server_ip }})/boot/grub
+      http net efinet tftp normal linux echo configfile search
+      search_label search_fs_uuid search_fs_file part_gpt part_msdos fat ext2 chain
+    creates: "{{ tftp_root }}/{{ pxe_httpboot_image }}"
+  when: pxe_enable_http_boot | bool
 
 - name: Install Secure Boot signed bootloaders
   ansible.builtin.apt:

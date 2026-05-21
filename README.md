@@ -11,7 +11,11 @@ Playbook Ansible qui déploie un serveur de démarrage réseau sur Debian :
   de Debian 13)
 - **TFTP / PXE** via `tftpd-hpa`, démarrage **BIOS legacy** (pxelinux) **et
   UEFI** (GRUB), avec option **Secure Boot**
+- **Provisioning de flotte déclaratif** : chaque machine connue est épinglée
+  à une IP et un profil de boot (réservation Kea + config PXE par MAC)
+- **Menu universel** : chainload de netboot.xyz (catalogue d'OS et d'outils)
 - **Installation automatisée** optionnelle par preseed (servie en HTTP)
+- **UEFI HTTP Boot** optionnel et **tableau de bord** Kea (API + page web)
 
 Compatible Debian 12 (bookworm) et Debian 13 (trixie).
 
@@ -19,9 +23,9 @@ Compatible Debian 12 (bookworm) et Debian 13 (trixie).
 
 | Rôle        | Rôle joué                                                   |
 |-------------|-------------------------------------------------------------|
-| `dhcp_role` | Serveur Kea DHCPv4 + DHCPv6, détection d'architecture PXE   |
-| `pxe_role`  | Serveur TFTP, bootloaders BIOS/UEFI, images d'installation |
-| `http_role` | Serveur web servant les fichiers preseed (si activé)        |
+| `dhcp_role` | Serveur Kea DHCPv4 + DHCPv6, réservations de flotte, API   |
+| `pxe_role`  | Serveur TFTP, bootloaders BIOS/UEFI, images, menus par MAC |
+| `http_role` | Serveur web : preseed, HTTP Boot, page de statut (si activé)|
 
 ## Prérequis
 
@@ -80,6 +84,30 @@ molecule test
 
 ## Fonctionnalités optionnelles
 
+### Provisioning de flotte déclaratif
+
+Décrivez vos machines connues dans `pxe_fleet` (`group_vars/all/dhcp.yml`) :
+
+```yaml
+pxe_fleet:
+  - name: web01
+    mac: "aa:bb:cc:dd:ee:01"
+    ip: "192.168.1.50"
+    os: debian
+    autoinstall: true
+```
+
+Chaque entrée génère une **réservation Kea** (IP fixe par MAC) et une **config
+PXE dédiée** (`pxelinux.cfg/01-<mac>` et `grub/host-<mac>.cfg`) : la machine
+démarre directement sur le profil qui lui est assigné. Avec `autoinstall: true`
+elle s'installe sans intervention (nécessite `pxe_enable_autoinstall: true`).
+
+### Menu de boot universel (netboot.xyz)
+
+Activé par défaut (`pxe_enable_netbootxyz`). Une entrée de menu chainload
+**netboot.xyz**, qui donne accès à un large catalogue d'installeurs d'OS et
+d'outils de diagnostic/rescue (memtest, SystemRescue, Clonezilla...).
+
 ### Installation automatisée (preseed)
 
 Désactivée par défaut car elle **efface le disque cible sans confirmation**.
@@ -87,6 +115,19 @@ Pour l'activer : `pxe_enable_autoinstall: true` dans `group_vars/all/dhcp.yml`.
 Le `http_role` installe alors nginx et publie les fichiers preseed, et des
 entrées « [AUTOMATED] » apparaissent dans les menus de démarrage.
 Adaptez les réponses preseed dans `http_role/defaults/main.yml`.
+
+### UEFI HTTP Boot
+
+`pxe_enable_http_boot: true` : les firmwares UEFI compatibles HTTP Boot se
+voient servir une URL `http://` (au lieu du TFTP). Une image GRUB dédiée est
+construite et le serveur web publie l'arbre de boot.
+**À valider sur du matériel réel** : le comportement dépend du firmware.
+
+### Tableau de bord Kea
+
+`pxe_enable_dashboard: true` : active le **Kea Control Agent** (API REST, sur
+la loopback) et génère une page de statut (`http://<serveur>/status.html`)
+listant les baux DHCP actifs, rafraîchie par un timer systemd.
 
 ### UEFI Secure Boot
 

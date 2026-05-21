@@ -18,17 +18,34 @@
         fail_msg: "Service {{ item }} is not running"
       loop:
         - kea-dhcp4-server
+        - kea-ctrl-agent
         - tftpd-hpa
+        - nginx
 
-    - name: Check that the PXE bootloaders are published
+    - name: Check that every expected boot artifact is published
       ansible.builtin.stat:
-        path: "/srv/tftp/{{ item }}"
-      register: pxe_boot_files
-      failed_when: not pxe_boot_files.stat.exists
+        path: "{{ tftp_root }}/{{ item }}"
+      register: pxe_artifact
+      failed_when: not pxe_artifact.stat.exists
       loop:
         - pxelinux.0
         - pxelinux.cfg/default
         - boot/grub/x86_64-efi/core.efi
         - boot/grub/grub.cfg
+        - netboot.xyz.lkrn
+        - netboot.xyz.efi
+        - grubnetx64-http.efi
+        - pxelinux.cfg/01-52-54-00-12-34-56
+        - "grub/host-52:54:00:12:34:56.cfg"
+        - preseed/preseed-debian.cfg
+        - status.html
       loop_control:
         label: "{{ item }}"
+
+    - name: Check that the web server serves the boot tree over HTTP
+      ansible.builtin.uri:
+        url: "http://127.0.0.1/{{ item }}"
+        status_code: 200
+      loop:
+        - preseed/preseed-debian.cfg
+        - status.html

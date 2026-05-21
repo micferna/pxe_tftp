@@ -1,0 +1,20 @@
+// {{ ansible_managed }}
+{
+  "Control-agent": {
+    "http-host": "{{ kea_ctrl_agent_address }}",
+    "http-port": {{ kea_ctrl_agent_port }},
+    "control-sockets": {
+      "dhcp4": {
+        "socket-type": "unix",
+        "socket-name": "/run/kea/kea4-ctrl-socket"
+      }
+    },
+    "loggers": [
+      {
+        "name": "kea-ctrl-agent",
+        "output_options": [ { "output": "syslog" } ],
+        "severity": "INFO"
+      }
+    ]
+  }
+}

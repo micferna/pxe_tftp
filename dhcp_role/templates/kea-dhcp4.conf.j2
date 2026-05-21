@@ -9,6 +9,17 @@
       "persist": true,
       "name": "/var/lib/kea/kea-leases4.csv"
     },
+{% if pxe_enable_dashboard | bool %}
+    "control-socket": {
+      "socket-type": "unix",
+      "socket-name": "/run/kea/kea4-ctrl-socket"
+    },
+{% if kea_lease_hook | default('') %}
+    "hooks-libraries": [
+      { "library": "{{ kea_lease_hook }}" }
+    ],
+{% endif %}
+{% endif %}
     "valid-lifetime": {{ dhcp_default_lease_time }},
     "max-valid-lifetime": {{ dhcp_max_lease_time }},
     "authoritative": {{ dhcp_authoritative | bool | ternary('true', 'false') }},
@@ -18,6 +29,16 @@
       { "name": "domain-name", "data": "{{ dhcp_domain_name }}" }
     ],
     "client-classes": [
+{% if pxe_enable_http_boot | bool %}
+      {
+        "name": "HTTP-UEFI-x64",
+        "test": "option[93].hex == 0x0010",
+        "option-data": [
+          { "name": "vendor-class-identifier", "data": "HTTPClient" }
+        ],
+        "boot-file-name": "http://{{ pxe_server_ip }}/{{ pxe_httpboot_image }}"
+      },
+{% endif %}
       {
         "name": "UEFI-x64",
         "test": "option[93].hex == 0x0007 or option[93].hex == 0x0009",
@@ -25,7 +46,7 @@
       },
       {
         "name": "Legacy-BIOS",
-        "test": "not (option[93].hex == 0x0007 or option[93].hex == 0x0009)",
+        "test": "not (option[93].hex == 0x0007 or option[93].hex == 0x0009 or option[93].hex == 0x0010)",
         "boot-file-name": "{{ pxe_bootfile_bios }}"
       }
     ],
@@ -38,6 +59,15 @@
         ],
         "option-data": [
           { "name": "routers", "data": "{{ dhcp_routers }}" }
+        ],
+        "reservations": [
+{% for host in pxe_fleet %}
+          {
+            "hw-address": "{{ host.mac }}",
+            "ip-address": "{{ host.ip }}",
+            "hostname": "{{ host.name }}"
+          }{{ "," if not loop.last else "" }}
+{% endfor %}
         ]
       }
     ],

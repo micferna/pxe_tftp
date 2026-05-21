@@ -14,3 +14,8 @@ dhcp_authoritative: true
 # Manage the DHCPv6 server. Tasks are automatically skipped when the target
 # host has no default IPv6 route, even when this is true.
 dhcp_manage_ipv6: true
+
+# Kea Control Agent (REST API), used when pxe_enable_dashboard is true.
+# Kept on loopback: the API is unauthenticated, do not expose it.
+kea_ctrl_agent_address: "127.0.0.1"
+kea_ctrl_agent_port: 8000

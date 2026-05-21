@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Generate the PXE/DHCP status page
+After=kea-ctrl-agent.service
+
+[Service]
+Type=oneshot
+Environment=KEA_CA_URL=http://{{ kea_ctrl_agent_address }}:{{ kea_ctrl_agent_port }}/
+Environment=KEA_STATUS_OUTPUT={{ tftp_root }}/status.html
+ExecStart=/usr/local/bin/kea-status

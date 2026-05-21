@@ -26,5 +26,21 @@ platforms:
       - pxe_servers
 provisioner:
   name: ansible
+  inventory:
+    # host_vars override the repo's playbook group_vars, so the test can
+    # exercise every optional feature.
+    host_vars:
+      pxe-debian12: &feature_test_vars
+        tftp_root: /srv/tftp
+        pxe_enable_autoinstall: true
+        pxe_enable_http_boot: true
+        pxe_enable_dashboard: true
+        pxe_fleet:
+          - name: test-node
+            mac: "52:54:00:12:34:56"
+            ip: "192.168.1.60"
+            os: debian
+            autoinstall: true
+      pxe-debian13: *feature_test_vars
 verifier:
   name: ansible
