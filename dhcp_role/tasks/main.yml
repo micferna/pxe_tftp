@@ -11,7 +11,8 @@
     cache_valid_time: 3600
 
 # Done before the DHCPv4 config so the lease_cmds hook path is known when the
-# kea-dhcp4.conf template is rendered.
+# kea-dhcp4.conf template is rendered, and the control socket directory has
+# the private mode (0750) Kea requires.
 - name: Prepare the Kea Control Agent
   when: pxe_enable_dashboard | bool
   block:
@@ -30,6 +31,14 @@
     - name: Record the lease_cmds hook path
       ansible.builtin.set_fact:
         kea_lease_hook: "{{ (kea_lease_hook_find.files | first).path if kea_lease_hook_find.files else '' }}"
+
+    # /var/lib/kea is a persistent directory created by the Kea packages, so
+    # this mode survives service restarts (unlike a systemd RuntimeDirectory).
+    - name: Ensure the Kea control socket directory is private
+      ansible.builtin.file:
+        path: /var/lib/kea
+        state: directory
+        mode: "0750"
 
 - name: Configure Kea DHCPv4
   ansible.builtin.template:
@@ -68,17 +77,10 @@
   vars:
     dhcp_v6_active: "{{ (dhcp_manage_ipv6 | bool) and (ansible_default_ipv6.interface is defined) }}"
 
-# Done after kea-dhcp4 is running: it owns /run/kea (its systemd
-# RuntimeDirectory), which the Control Agent needs for the socket path.
+# Done after kea-dhcp4 is running so its control socket already exists.
 - name: Set up the Kea Control Agent (REST API for the dashboard)
   when: pxe_enable_dashboard | bool
   block:
-    - name: Ensure the Kea runtime socket directory is private
-      ansible.builtin.file:
-        path: /run/kea
-        state: directory
-        mode: "0750"
-
     - name: Deploy the Kea Control Agent configuration
       ansible.builtin.template:
         src: kea-ctrl-agent.conf.j2

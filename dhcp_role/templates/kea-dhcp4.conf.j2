@@ -12,7 +12,7 @@
 {% if pxe_enable_dashboard | bool %}
     "control-socket": {
       "socket-type": "unix",
-      "socket-name": "/run/kea/kea4-ctrl-socket"
+      "socket-name": "/var/lib/kea/kea4-ctrl-socket"
     },
 {% if kea_lease_hook | default('') %}
     "hooks-libraries": [
