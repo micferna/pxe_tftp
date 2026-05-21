@@ -3,3 +3,7 @@
   ansible.builtin.systemd:
     name: nginx
     state: reloaded
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true

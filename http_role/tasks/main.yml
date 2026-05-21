@@ -77,15 +77,20 @@
       loop:
         - kea-status.service
         - kea-status.timer
+      notify: Reload systemd daemon
+
+    - name: Apply pending systemd unit changes before using them
+      ansible.builtin.meta: flush_handlers
 
     - name: Enable the status page refresh timer
       ansible.builtin.systemd:
         name: kea-status.timer
         enabled: true
         state: started
-        daemon_reload: true
 
     - name: Generate the status page now
-      ansible.builtin.systemd:
-        name: kea-status.service
-        state: started
+      ansible.builtin.command: /usr/local/bin/kea-status
+      changed_when: false
+      environment:
+        KEA_CA_URL: "http://{{ kea_ctrl_agent_address }}:{{ kea_ctrl_agent_port }}/"
+        KEA_STATUS_OUTPUT: "{{ tftp_root }}/status.html"
