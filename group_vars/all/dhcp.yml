@@ -1,4 +1,10 @@
-# Variables de configuration
+---
+# ---------------------------------------------------------------------------
+# Site configuration -- edit these values for your network before deploying.
+# Technical defaults live in each role's defaults/main.yml.
+# ---------------------------------------------------------------------------
+
+# --- IPv4 DHCP scope ---
 dhcp_domain_name: "test.lan"
 dhcp_dns_servers: "1.1.1.1, 1.0.0.1"
 dhcp_subnet: "192.168.1.0"
@@ -8,14 +14,21 @@ dhcp_range_end: "192.168.1.250"
 dhcp_routers: "192.168.1.1"
 dhcp_broadcast_address: "192.168.1.255"
 
-# Variables de configuration pour IPv6
-dhcp6_subnet: "2a01::"
+# --- IPv6 DHCP scope ---
+# Example uses a Unique Local Address prefix (fd00::/8, RFC 4193).
+# Replace with your own delegated prefix in production.
+dhcp6_subnet: "fd00:abcd:1::"
 dhcp6_prefix: "/64"
-dhcp6_range_start: "2a01::10"
-dhcp6_range_end: "2a01::100"
-dhcp6_name_servers: "fec0::1"
+dhcp6_range_start: "fd00:abcd:1::10"
+dhcp6_range_end: "fd00:abcd:1::100"
+dhcp6_name_servers: "2606:4700:4700::1111"
 dhcp6_domain_search: "test.lan"
 
-# PXE CONFIGURATION
+# --- PXE server ---
+# IP address clients use to reach this TFTP server (DHCP next-server).
 pxe_server_ip: "192.168.1.14"
-tftp_root: "/srv/tftp"
+
+# Boot filenames served per firmware type. Shared by dhcp_role (advertised
+# over DHCP) and pxe_role (produced on disk) -- keep both in sync.
+pxe_bootfile_bios: "pxelinux.0"
+pxe_bootfile_uefi: "boot/grub/x86_64-efi/core.efi"

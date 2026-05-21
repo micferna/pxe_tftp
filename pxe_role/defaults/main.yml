@@ -1,0 +1,70 @@
+---
+# Default values for pxe_role.
+
+# Root directory served over TFTP. Must match tftpd-hpa's TFTP_DIRECTORY.
+tftp_root: /srv/tftp
+
+# Packages for a BIOS + UEFI PXE server.
+# grub-efi-amd64-bin provides the modules used to build the UEFI netboot image.
+pxe_packages:
+  - tftpd-hpa
+  - syslinux
+  - pxelinux
+  - grub-efi-amd64-bin
+
+# Build UEFI (GRUB) boot support in addition to legacy BIOS.
+pxe_enable_uefi: true
+
+# tftpd-hpa daemon options.
+# --secure chroots into TFTP_DIRECTORY; --create is intentionally omitted so
+# the service stays strictly read-only.
+tftp_username: tftp
+tftp_address: ":69"
+tftp_options: "--secure"
+
+# Boot menu.
+pxe_menu_title: "PXE Boot Menu"
+pxe_menu_timeout_seconds: 30
+
+# File permissions for everything published over TFTP.
+tftp_dir_mode: "0755"
+tftp_file_mode: "0644"
+
+# Subdirectories created under the TFTP root.
+pxe_tftp_dirs:
+  - pxelinux.cfg
+  - boot/grub
+  - debian-installer/amd64
+  - ubuntu-installer/amd64
+
+# Syslinux BIOS bootloader modules copied from the local filesystem.
+pxe_bios_files:
+  - src: /usr/lib/PXELINUX/pxelinux.0
+    dest: pxelinux.0
+  - src: /usr/lib/syslinux/modules/bios/ldlinux.c32
+    dest: ldlinux.c32
+  - src: /usr/lib/syslinux/modules/bios/menu.c32
+    dest: menu.c32
+  - src: /usr/lib/syslinux/modules/bios/libutil.c32
+    dest: libutil.c32
+  - src: /usr/lib/syslinux/modules/bios/libmenu.c32
+    dest: libmenu.c32
+
+# Netboot installer images.
+# All URLs use HTTPS to prevent tampering in transit. To additionally pin
+# integrity, set "checksum" to "sha256:<hex>" (or sha512:...); an empty value
+# disables the check. Publish hashes change on every point release, so update
+# them whenever you bump a release.
+pxe_installer_files:
+  - url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux"
+    dest: "debian-installer/amd64/linux"
+    checksum: ""
+  - url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz"
+    dest: "debian-installer/amd64/initrd.gz"
+    checksum: ""
+  - url: "https://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux"
+    dest: "ubuntu-installer/amd64/linux"
+    checksum: ""
+  - url: "https://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/initrd.gz"
+    dest: "ubuntu-installer/amd64/initrd.gz"
+    checksum: ""

@@ -1,63 +1,82 @@
 ---
-- name: Install TFTP packages
-  apt:
-    name: "{{ item }}"
+- name: Install TFTP and PXE packages
+  ansible.builtin.apt:
+    name: "{{ pxe_packages }}"
     state: present
-  with_items:
-    - tftpd-hpa
-    - syslinux
-    - pxelinux
+    update_cache: true
+    cache_valid_time: 3600
 
-- name: Create PXE directory
-  file:
+- name: Ensure TFTP root exists
+  ansible.builtin.file:
     path: "{{ tftp_root }}"
     state: directory
+    owner: root
+    group: root
+    mode: "{{ tftp_dir_mode }}"
 
-- name: Copy PXE files
-  copy:
+- name: Create TFTP subdirectories
+  ansible.builtin.file:
+    path: "{{ tftp_root }}/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ tftp_dir_mode }}"
+  loop: "{{ pxe_tftp_dirs }}"
+
+- name: Copy syslinux BIOS bootloader modules
+  ansible.builtin.copy:
     src: "{{ item.src }}"
     dest: "{{ tftp_root }}/{{ item.dest }}"
-    remote_src: yes
-  with_items:
-    - { src: "/usr/lib/PXELINUX/pxelinux.0", dest: "pxelinux.0" }
-    - { src: "/usr/lib/syslinux/modules/bios/ldlinux.c32", dest: "ldlinux.c32" }
-    - { src: "/usr/lib/syslinux/modules/bios/menu.c32", dest: "menu.c32" }
-    - { src: "/usr/lib/syslinux/modules/bios/libutil.c32", dest: "libutil.c32" }
-    - { src: "/usr/lib/syslinux/modules/bios/libmenu.c32", dest: "libmenu.c32" }
+    remote_src: true
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  loop: "{{ pxe_bios_files }}"
 
-- name: Create PXE Debian directory
-  file:
-    path: "{{ tftp_root }}/debian-installer/amd64"
-    state: directory
-
-- name: Download PXE Debian files
-  get_url:
+- name: Download Debian and Ubuntu netboot installer files
+  ansible.builtin.get_url:
     url: "{{ item.url }}"
     dest: "{{ tftp_root }}/{{ item.dest }}"
-  with_items:
-    - { url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux", dest: "debian-installer/amd64/linux" }
-    - { url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz", dest: "debian-installer/amd64/initrd.gz" }
+    checksum: "{{ item.checksum | default(omit, true) }}"
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  loop: "{{ pxe_installer_files }}"
 
-- name: Create PXE Ubuntu directory
-  file:
-    path: "{{ tftp_root }}/ubuntu-installer/amd64"
-    state: directory
-
-- name: Download PXE Ubuntu files
-  get_url:
-    url: "{{ item.url }}"
-    dest: "{{ tftp_root }}/{{ item.dest }}"
-  with_items:
-    - { url: "http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/linux", dest: "ubuntu-installer/amd64/linux" }
-    - { url: "http://archive.ubuntu.com/ubuntu/dists/focal/main/installer-amd64/current/legacy-images/netboot/ubuntu-installer/amd64/initrd.gz", dest: "ubuntu-installer/amd64/initrd.gz" }
-
-
-- name: Create PXE menu directory
-  file:
-    path: "{{ tftp_root }}/pxelinux.cfg"
-    state: directory
-
-- name: Configure PXE menu
-  template:
+- name: Configure the legacy BIOS (pxelinux) boot menu
+  ansible.builtin.template:
     src: pxelinux.cfg.j2
     dest: "{{ tftp_root }}/pxelinux.cfg/default"
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+
+- name: Generate the GRUB network boot image for UEFI clients
+  ansible.builtin.command:
+    cmd: "grub-mknetdir --net-directory={{ tftp_root }} --subdir=boot/grub"
+    creates: "{{ tftp_root }}/boot/grub/x86_64-efi/core.efi"
+  when: pxe_enable_uefi | bool
+
+- name: Configure the UEFI (GRUB) boot menu
+  ansible.builtin.template:
+    src: grub.cfg.j2
+    dest: "{{ tftp_root }}/boot/grub/grub.cfg"
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  when: pxe_enable_uefi | bool
+
+- name: Configure the tftpd-hpa daemon
+  ansible.builtin.template:
+    src: tftpd-hpa.j2
+    dest: /etc/default/tftpd-hpa
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart tftpd-hpa
+
+- name: Ensure tftpd-hpa is enabled and running
+  ansible.builtin.systemd:
+    name: tftpd-hpa
+    enabled: true
+    state: started

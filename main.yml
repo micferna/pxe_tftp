@@ -1,5 +1,8 @@
 ---
-- hosts: pxe_servers
+- name: Deploy DHCP and PXE/TFTP boot server
+  hosts: pxe_servers
+  become: true
+  gather_facts: true
   roles:
     - dhcp_role
     - pxe_role

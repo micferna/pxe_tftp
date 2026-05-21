@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: dhcp_role
+  author: micferna
+  description: ISC DHCP server (IPv4/IPv6) for PXE network boot.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - dhcp
+    - pxe
+    - networking
+
+dependencies: []

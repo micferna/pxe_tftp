@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: pxe_role
+  author: micferna
+  description: TFTP/PXE boot server with BIOS and UEFI support.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - pxe
+    - tftp
+    - netboot
+
+dependencies: []

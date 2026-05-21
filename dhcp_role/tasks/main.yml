@@ -1,33 +1,61 @@
 ---
-- name: Install DHCP packages
-  apt:
-    name: "{{ item }}"
+- name: Install DHCP server package
+  ansible.builtin.apt:
+    name: isc-dhcp-server
     state: present
-  with_items:
-    - isc-dhcp-server
+    update_cache: true
+    cache_valid_time: 3600
 
 - name: Configure DHCP for IPv4
-  template:
+  ansible.builtin.template:
     src: dhcpd.conf.j2
     dest: /etc/dhcp/dhcpd.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "/usr/sbin/dhcpd -t -cf %s"
   notify: Restart DHCP service
 
-- name: Configure DHCP interface for IPv4
-  lineinfile:
+- name: Configure DHCP IPv4 listening interface
+  ansible.builtin.lineinfile:
     path: /etc/default/isc-dhcp-server
     regexp: "^INTERFACESv4="
-    line: "INTERFACESv4={{ ansible_default_ipv4.interface }}"
+    line: 'INTERFACESv4="{{ ansible_default_ipv4.interface }}"'
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
   notify: Restart DHCP service
 
 - name: Configure DHCP for IPv6
-  template:
+  ansible.builtin.template:
     src: dhcpd6.conf.j2
     dest: /etc/dhcp/dhcpd6.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "/usr/sbin/dhcpd -6 -t -cf %s"
   notify: Restart DHCP service
+  when:
+    - dhcp_manage_ipv6 | bool
+    - ansible_default_ipv6.interface is defined
 
-- name: Configure DHCP interface for IPv6
-  lineinfile:
+- name: Configure DHCP IPv6 listening interface
+  ansible.builtin.lineinfile:
     path: /etc/default/isc-dhcp-server
     regexp: "^INTERFACESv6="
-    line: "INTERFACESv6={{ ansible_default_ipv6.interface }}"
+    line: 'INTERFACESv6="{{ ansible_default_ipv6.interface }}"'
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
   notify: Restart DHCP service
+  when:
+    - dhcp_manage_ipv6 | bool
+    - ansible_default_ipv6.interface is defined
+
+- name: Ensure DHCP service is enabled and running
+  ansible.builtin.systemd:
+    name: isc-dhcp-server
+    enabled: true
+    state: started

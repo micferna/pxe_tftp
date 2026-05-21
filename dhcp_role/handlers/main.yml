@@ -1,7 +1,7 @@
 ---
+# Restart synchronously so a failed restart fails the play instead of being
+# silently swallowed (the previous async/poll:0 hid broken configurations).
 - name: Restart DHCP service
-  systemd:
+  ansible.builtin.systemd:
     name: isc-dhcp-server
     state: restarted
-  async: 60
-  poll: 0
