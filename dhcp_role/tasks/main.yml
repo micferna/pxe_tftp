@@ -11,49 +11,19 @@
     cache_valid_time: 3600
 
 # Done before the DHCPv4 config so the lease_cmds hook path is known when the
-# kea-dhcp4.conf template is rendered, and the systemd drop-in that fixes the
-# control socket directory mode is in place before the services restart.
-- name: Prepare the Kea Control Agent
+# kea-dhcp4.conf template is rendered (the dashboard reads leases through it).
+- name: Locate the Kea lease_cmds hook library
+  ansible.builtin.find:
+    paths: /usr/lib
+    patterns: libdhcp_lease_cmds.so
+    recurse: true
+  register: kea_lease_hook_find
   when: pxe_enable_dashboard | bool
-  block:
-    - name: Install the Kea Control Agent package
-      ansible.builtin.apt:
-        name: kea-ctrl-agent
-        state: present
 
-    - name: Locate the Kea lease_cmds hook library
-      ansible.builtin.find:
-        paths: /usr/lib
-        patterns: libdhcp_lease_cmds.so
-        recurse: true
-      register: kea_lease_hook_find
-
-    - name: Record the lease_cmds hook path
-      ansible.builtin.set_fact:
-        kea_lease_hook: "{{ (kea_lease_hook_find.files | first).path if kea_lease_hook_find.files else '' }}"
-
-    - name: Create systemd drop-in directories for the Kea services
-      ansible.builtin.file:
-        path: "/etc/systemd/system/{{ item }}.service.d"
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-      loop:
-        - kea-dhcp4-server
-        - kea-ctrl-agent
-
-    - name: Pin the Kea control socket directory mode via a systemd drop-in
-      ansible.builtin.template:
-        src: kea-runtimedir.conf.j2
-        dest: "/etc/systemd/system/{{ item }}.service.d/pxe-runtimedir.conf"
-        owner: root
-        group: root
-        mode: "0644"
-      loop:
-        - kea-dhcp4-server
-        - kea-ctrl-agent
-      notify: Reload systemd daemon
+- name: Record the lease_cmds hook path
+  ansible.builtin.set_fact:
+    kea_lease_hook: "{{ (kea_lease_hook_find.files | first).path if kea_lease_hook_find.files else '' }}"
+  when: pxe_enable_dashboard | bool
 
 - name: Configure Kea DHCPv4
   ansible.builtin.template:
@@ -65,9 +35,9 @@
     validate: "/usr/sbin/kea-dhcp4 -t %s"
   notify: Restart Kea DHCPv4
 
-# Apply the drop-in (daemon reload) and restart kea-dhcp4 now, so /run/kea is
-# recreated with mode 0750 before the Control Agent config is validated.
-- name: Apply pending Kea systemd changes
+# Restart kea-dhcp4 now (rather than at the end of the play) so its control
+# socket is live before http_role generates the first status page.
+- name: Apply the Kea DHCPv4 configuration
   ansible.builtin.meta: flush_handlers
 
 - name: Ensure Kea DHCPv4 service is enabled and running
@@ -96,24 +66,3 @@
     state: "{{ 'started' if dhcp_v6_active else 'stopped' }}"
   vars:
     dhcp_v6_active: "{{ (dhcp_manage_ipv6 | bool) and (ansible_default_ipv6.interface is defined) }}"
-
-# Done after kea-dhcp4 is running with the drop-in, so /run/kea exists at the
-# mode the Control Agent requires.
-- name: Set up the Kea Control Agent (REST API for the dashboard)
-  when: pxe_enable_dashboard | bool
-  block:
-    - name: Deploy the Kea Control Agent configuration
-      ansible.builtin.template:
-        src: kea-ctrl-agent.conf.j2
-        dest: /etc/kea/kea-ctrl-agent.conf
-        owner: root
-        group: root
-        mode: "0644"
-        validate: "/usr/sbin/kea-ctrl-agent -t %s"
-      notify: Restart Kea Control Agent
-
-    - name: Ensure the Kea Control Agent is enabled and running
-      ansible.builtin.systemd:
-        name: kea-ctrl-agent
-        enabled: true
-        state: started

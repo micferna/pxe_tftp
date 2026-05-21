@@ -1,48 +1,58 @@
 #!/usr/bin/env python3
-"""Generate a static HTML status page from the Kea Control Agent REST API.
+"""Generate a static HTML status page from the Kea DHCPv4 control socket.
 
 Configuration is read from the environment:
-  KEA_CA_URL         Kea Control Agent base URL (default http://127.0.0.1:8000/)
-  KEA_STATUS_OUTPUT  path of the HTML file to write (default /srv/tftp/status.html)
+  KEA_SOCKET         path to the kea-dhcp4 unix control socket
+  KEA_STATUS_OUTPUT  path of the HTML file to write
 
-The script never fails the caller: API errors are rendered onto the page so a
-systemd timer can run it unattended.
+The script talks to the kea-dhcp4 control socket directly (no Control Agent).
+It never fails the caller: errors are rendered onto the page so a systemd
+timer can run it unattended.
 """
 import datetime
 import html
 import json
 import os
-import urllib.request
+import socket
 
-CA_URL = os.environ.get("KEA_CA_URL", "http://127.0.0.1:8000/")
+SOCKET_PATH = os.environ.get("KEA_SOCKET", "/run/kea/kea4-ctrl-socket")
 OUTPUT = os.environ.get("KEA_STATUS_OUTPUT", "/srv/tftp/status.html")
 
 
 def kea_command(command):
-    """Send a command to the Kea Control Agent and return its first response."""
-    payload = json.dumps({"command": command, "service": ["dhcp4"]}).encode()
-    request = urllib.request.Request(
-        CA_URL, data=payload, headers={"Content-Type": "application/json"}
-    )
-    with urllib.request.urlopen(request, timeout=5) as response:
-        return json.load(response)[0]
+    """Send a command to the kea-dhcp4 unix control socket, return the reply."""
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.settimeout(5)
+    try:
+        sock.connect(SOCKET_PATH)
+        sock.sendall(json.dumps({"command": command}).encode())
+        sock.shutdown(socket.SHUT_WR)
+        chunks = []
+        while True:
+            chunk = sock.recv(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+    finally:
+        sock.close()
+    return json.loads(b"".join(chunks))
 
 
 def collect_leases():
     """Return (leases, error). lease4-get-all needs the lease_cmds hook."""
     try:
-        result = kea_command("lease4-get-all")
+        reply = kea_command("lease4-get-all")
     except Exception as exc:  # noqa: BLE001 - surfaced on the page
         return [], str(exc)
-    if result.get("result", 1) != 0:
-        return [], result.get("text", "lease query unavailable")
-    return result.get("arguments", {}).get("leases", []), None
+    if reply.get("result", 1) != 0:
+        return [], reply.get("text", "lease query unavailable")
+    return reply.get("arguments", {}).get("leases", []), None
 
 
 def render(leases, error):
     generated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if error:
-        status = '<p class="err">Kea API: {}</p>'.format(html.escape(error))
+        status = '<p class="err">Kea: {}</p>'.format(html.escape(error))
     else:
         status = "<p>{} active lease(s).</p>".format(len(leases))
 

@@ -15,7 +15,7 @@ dhcp_authoritative: true
 # host has no default IPv6 route, even when this is true.
 dhcp_manage_ipv6: true
 
-# Kea Control Agent (REST API), used when pxe_enable_dashboard is true.
-# Kept on loopback: the API is unauthenticated, do not expose it.
-kea_ctrl_agent_address: "127.0.0.1"
-kea_ctrl_agent_port: 8000
+# Unix control socket exposed by kea-dhcp4 when pxe_enable_dashboard is true.
+# The status page generator reads leases through it. Kea requires this exact
+# path (/run/kea), created and owned by the kea-dhcp4 service.
+kea_control_socket: /run/kea/kea4-ctrl-socket

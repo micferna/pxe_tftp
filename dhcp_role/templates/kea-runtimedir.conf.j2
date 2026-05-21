@@ -1,8 +1,0 @@
-# {{ ansible_managed }}
-# Kea requires its control socket directory (/run/kea) to be mode 0750, but
-# systemd recreates a RuntimeDirectory with the default mode on every service
-# start. This drop-in pins the mode and keeps the directory across restarts so
-# the Control Agent always finds a valid socket path.
-[Service]
-RuntimeDirectoryMode=0750
-RuntimeDirectoryPreserve=yes

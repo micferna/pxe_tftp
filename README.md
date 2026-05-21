@@ -15,7 +15,7 @@ Playbook Ansible qui déploie un serveur de démarrage réseau sur Debian :
   à une IP et un profil de boot (réservation Kea + config PXE par MAC)
 - **Menu universel** : chainload de netboot.xyz (catalogue d'OS et d'outils)
 - **Installation automatisée** optionnelle par preseed (servie en HTTP)
-- **UEFI HTTP Boot** optionnel et **tableau de bord** Kea (API + page web)
+- **UEFI HTTP Boot** optionnel et **tableau de bord** web des baux DHCP
 
 Compatible Debian 12 (bookworm) et Debian 13 (trixie).
 
@@ -125,9 +125,9 @@ construite et le serveur web publie l'arbre de boot.
 
 ### Tableau de bord Kea
 
-`pxe_enable_dashboard: true` : active le **Kea Control Agent** (API REST, sur
-la loopback) et génère une page de statut (`http://<serveur>/status.html`)
-listant les baux DHCP actifs, rafraîchie par un timer systemd.
+`pxe_enable_dashboard: true` : `kea-dhcp4` expose un socket de contrôle Unix,
+et un timer systemd génère une page de statut
+(`http://<serveur>/status.html`) listant les baux DHCP actifs.
 
 ### UEFI Secure Boot
 

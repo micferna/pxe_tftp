@@ -92,5 +92,5 @@
       ansible.builtin.command: /usr/local/bin/kea-status
       changed_when: false
       environment:
-        KEA_CA_URL: "http://{{ kea_ctrl_agent_address }}:{{ kea_ctrl_agent_port }}/"
+        KEA_SOCKET: "{{ kea_control_socket }}"
         KEA_STATUS_OUTPUT: "{{ tftp_root }}/status.html"

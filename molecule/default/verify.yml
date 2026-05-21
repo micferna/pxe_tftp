@@ -18,7 +18,6 @@
         fail_msg: "Service {{ item }} is not running"
       loop:
         - kea-dhcp4-server
-        - kea-ctrl-agent
         - tftpd-hpa
         - nginx
 
