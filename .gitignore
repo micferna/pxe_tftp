@@ -1,0 +1,5 @@
+venv/
+*.retry
+__pycache__/
+*.pyc
+.vault_pass

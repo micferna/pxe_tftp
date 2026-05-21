@@ -1,0 +1,9 @@
+---
+exclude_paths:
+  - venv/
+  - .github/
+
+# Galaxy metadata completeness is not required for an internal playbook.
+skip_list:
+  - galaxy[no-changelog]
+  - galaxy[version-incorrect]
