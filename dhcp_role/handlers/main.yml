@@ -1,7 +1,12 @@
 ---
 # Restart synchronously so a failed restart fails the play instead of being
-# silently swallowed (the previous async/poll:0 hid broken configurations).
-- name: Restart DHCP service
+# silently swallowed.
+- name: Restart Kea DHCPv4
   ansible.builtin.systemd:
-    name: isc-dhcp-server
+    name: kea-dhcp4-server
+    state: restarted
+
+- name: Restart Kea DHCPv6
+  ansible.builtin.systemd:
+    name: kea-dhcp6-server
     state: restarted

@@ -1,16 +1,16 @@
 ---
-# Default values for dhcp_role.
+# Default values for dhcp_role (Kea DHCP server).
 # Network-specific values are expected in group_vars/all/dhcp.yml.
 
-# Lease timing, in seconds.
+# Lease lifetimes, in seconds.
 dhcp_default_lease_time: 600
 dhcp_max_lease_time: 7200
 
-# Send DHCPNAK for leases this server does not own.
+# Answer authoritatively (send DHCPNAK for leases this server does not own).
 # WARNING: only enable this if this is the ONLY DHCP server on the segment.
 # On a network with another DHCP server it will break client networking.
 dhcp_authoritative: true
 
-# Manage the DHCPv6 configuration. Tasks are automatically skipped when the
-# target host has no default IPv6 route, even when this is true.
+# Manage the DHCPv6 server. Tasks are automatically skipped when the target
+# host has no default IPv6 route, even when this is true.
 dhcp_manage_ipv6: true

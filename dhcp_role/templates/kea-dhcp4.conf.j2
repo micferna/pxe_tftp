@@ -1,0 +1,52 @@
+// {{ ansible_managed }}
+{
+  "Dhcp4": {
+    "interfaces-config": {
+      "interfaces": [ "{{ ansible_default_ipv4.interface }}" ]
+    },
+    "lease-database": {
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/kea-leases4.csv"
+    },
+    "valid-lifetime": {{ dhcp_default_lease_time }},
+    "max-valid-lifetime": {{ dhcp_max_lease_time }},
+    "authoritative": {{ dhcp_authoritative | bool | ternary('true', 'false') }},
+    "next-server": "{{ pxe_server_ip }}",
+    "option-data": [
+      { "name": "domain-name-servers", "data": "{{ dhcp_dns_servers }}" },
+      { "name": "domain-name", "data": "{{ dhcp_domain_name }}" }
+    ],
+    "client-classes": [
+      {
+        "name": "UEFI-x64",
+        "test": "option[93].hex == 0x0007 or option[93].hex == 0x0009",
+        "boot-file-name": "{{ pxe_bootfile_uefi }}"
+      },
+      {
+        "name": "Legacy-BIOS",
+        "test": "not (option[93].hex == 0x0007 or option[93].hex == 0x0009)",
+        "boot-file-name": "{{ pxe_bootfile_bios }}"
+      }
+    ],
+    "subnet4": [
+      {
+        "id": 1,
+        "subnet": "{{ dhcp_subnet_cidr }}",
+        "pools": [
+          { "pool": "{{ dhcp_range_start }} - {{ dhcp_range_end }}" }
+        ],
+        "option-data": [
+          { "name": "routers", "data": "{{ dhcp_routers }}" }
+        ]
+      }
+    ],
+    "loggers": [
+      {
+        "name": "kea-dhcp4",
+        "output_options": [ { "output": "syslog" } ],
+        "severity": "INFO"
+      }
+    ]
+  }
+}

@@ -7,12 +7,10 @@
 # --- IPv4 DHCP scope ---
 dhcp_domain_name: "test.lan"
 dhcp_dns_servers: "1.1.1.1, 1.0.0.1"
-dhcp_subnet: "192.168.1.0"
-dhcp_netmask: "255.255.255.0"
+dhcp_subnet_cidr: "192.168.1.0/24"
 dhcp_range_start: "192.168.1.240"
 dhcp_range_end: "192.168.1.250"
 dhcp_routers: "192.168.1.1"
-dhcp_broadcast_address: "192.168.1.255"
 
 # --- IPv6 DHCP scope ---
 # Example uses a Unique Local Address prefix (fd00::/8, RFC 4193).
@@ -30,5 +28,12 @@ pxe_server_ip: "192.168.1.14"
 
 # Boot filenames served per firmware type. Shared by dhcp_role (advertised
 # over DHCP) and pxe_role (produced on disk) -- keep both in sync.
+# For UEFI Secure Boot, set pxe_secureboot: true (pxe_role) and change
+# pxe_bootfile_uefi to "bootx64.efi".
 pxe_bootfile_bios: "pxelinux.0"
 pxe_bootfile_uefi: "boot/grub/x86_64-efi/core.efi"
+
+# Automated install via preseed. OFF by default: it erases the target disk
+# without confirmation. When true, http_role serves the preseed files and the
+# boot menus expose dedicated "[AUTOMATED]" entries.
+pxe_enable_autoinstall: false

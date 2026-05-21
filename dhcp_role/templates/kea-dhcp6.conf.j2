@@ -1,0 +1,34 @@
+// {{ ansible_managed }}
+{
+  "Dhcp6": {
+    "interfaces-config": {
+      "interfaces": [ "{{ ansible_default_ipv6.interface }}" ]
+    },
+    "lease-database": {
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/kea-leases6.csv"
+    },
+    "valid-lifetime": {{ dhcp_default_lease_time }},
+    "subnet6": [
+      {
+        "id": 1,
+        "subnet": "{{ dhcp6_subnet }}{{ dhcp6_prefix }}",
+        "pools": [
+          { "pool": "{{ dhcp6_range_start }} - {{ dhcp6_range_end }}" }
+        ],
+        "option-data": [
+          { "name": "dns-servers", "data": "{{ dhcp6_name_servers }}" },
+          { "name": "domain-search", "data": "{{ dhcp6_domain_search }}" }
+        ]
+      }
+    ],
+    "loggers": [
+      {
+        "name": "kea-dhcp6",
+        "output_options": [ { "output": "syslog" } ],
+        "severity": "INFO"
+      }
+    ]
+  }
+}
