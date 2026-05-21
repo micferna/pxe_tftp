@@ -1,4 +1,10 @@
 ---
+# "Reload systemd daemon" is defined first so that, when handlers are flushed,
+# the daemon reload runs before the service restarts that depend on it.
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
 # Restart synchronously so a failed restart fails the play instead of being
 # silently swallowed.
 - name: Restart Kea DHCPv4
