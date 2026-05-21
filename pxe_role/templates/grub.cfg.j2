@@ -11,6 +11,18 @@ menuentry "Install Ubuntu" {
     linux /ubuntu-installer/amd64/linux
     initrd /ubuntu-installer/amd64/initrd.gz
 }
+{% if pxe_enable_autoinstall | bool %}
+
+menuentry "Install Debian [AUTOMATED - ERASES DISK]" {
+    linux /debian-installer/amd64/linux auto=true priority=critical preseed/url=http://{{ pxe_server_ip }}/preseed-debian.cfg
+    initrd /debian-installer/amd64/initrd.gz
+}
+
+menuentry "Install Ubuntu [AUTOMATED - ERASES DISK]" {
+    linux /ubuntu-installer/amd64/linux auto=true priority=critical preseed/url=http://{{ pxe_server_ip }}/preseed-ubuntu.cfg
+    initrd /ubuntu-installer/amd64/initrd.gz
+}
+{% endif %}
 
 menuentry "Boot from local disk" {
     exit

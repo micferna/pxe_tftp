@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: http_role
+  author: micferna
+  description: Web server publishing preseed files for automated installs.
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+  galaxy_tags:
+    - pxe
+    - preseed
+    - nginx
+
+dependencies: []

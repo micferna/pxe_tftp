@@ -6,3 +6,4 @@
   roles:
     - dhcp_role
     - pxe_role
+    - http_role

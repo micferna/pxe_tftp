@@ -1,0 +1,32 @@
+---
+# Default values for http_role.
+# This role only does anything when pxe_enable_autoinstall is true
+# (see group_vars/all/dhcp.yml).
+
+# Document root and listening port for the provisioning web server.
+http_root: /var/www/pxe
+http_listen_port: 80
+
+# Automated-install (preseed) answers.
+# SECURITY: preseed files are served over plain, unauthenticated HTTP. Anyone
+# able to reach this server can read them -- do NOT store real secrets here,
+# restrict the web server to your provisioning network, and change the
+# credentials below (ideally via Ansible Vault).
+preseed_hostname: "debian"
+preseed_domain: "test.lan"
+preseed_locale: "en_US.UTF-8"
+preseed_keyboard: "fr"
+preseed_timezone: "Europe/Paris"
+preseed_username: "pxe"
+preseed_user_fullname: "PXE User"
+preseed_user_password: "changeme"
+
+# Distributions a preseed file is generated for. Each produces the file
+# preseed-<name>.cfg under http_root.
+preseed_targets:
+  - name: debian
+    mirror_hostname: deb.debian.org
+    mirror_directory: /debian
+  - name: ubuntu
+    mirror_hostname: archive.ubuntu.com
+    mirror_directory: /ubuntu

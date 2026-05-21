@@ -1,0 +1,44 @@
+# {{ ansible_managed }}
+# Automated (preseed) install profile for {{ item.name }}.
+# WARNING: this profile partitions and ERASES the target disk without asking.
+
+d-i debian-installer/locale string {{ preseed_locale }}
+d-i keyboard-configuration/xkb-keymap select {{ preseed_keyboard }}
+
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string {{ preseed_hostname }}
+d-i netcfg/get_domain string {{ preseed_domain }}
+
+d-i mirror/country string manual
+d-i mirror/http/hostname string {{ item.mirror_hostname }}
+d-i mirror/http/directory string {{ item.mirror_directory }}
+d-i mirror/http/proxy string
+
+d-i passwd/root-login boolean false
+d-i passwd/user-fullname string {{ preseed_user_fullname }}
+d-i passwd/username string {{ preseed_username }}
+d-i passwd/user-password password {{ preseed_user_password }}
+d-i passwd/user-password-again password {{ preseed_user_password }}
+d-i user-setup/allow-password-weak boolean true
+
+d-i clock-setup/utc boolean true
+d-i time/zone string {{ preseed_timezone }}
+d-i clock-setup/ntp boolean true
+
+d-i partman-auto/method string regular
+d-i partman-auto/choose_recipe select atomic
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+d-i pkgsel/include string openssh-server
+d-i pkgsel/upgrade select full-upgrade
+popularity-contest popularity-contest/participate boolean false
+
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/bootdev string default
+
+d-i finish-install/reboot_in_progress note

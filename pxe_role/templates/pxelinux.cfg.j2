@@ -13,6 +13,18 @@ LABEL ubuntu
   MENU LABEL ^Install Ubuntu
   KERNEL ubuntu-installer/amd64/linux
   APPEND initrd=ubuntu-installer/amd64/initrd.gz
+{% if pxe_enable_autoinstall | bool %}
+
+LABEL debian-auto
+  MENU LABEL Install Debian [AUTOMATED - ERASES DISK]
+  KERNEL debian-installer/amd64/linux
+  APPEND initrd=debian-installer/amd64/initrd.gz auto=true priority=critical preseed/url=http://{{ pxe_server_ip }}/preseed-debian.cfg
+
+LABEL ubuntu-auto
+  MENU LABEL Install Ubuntu [AUTOMATED - ERASES DISK]
+  KERNEL ubuntu-installer/amd64/linux
+  APPEND initrd=ubuntu-installer/amd64/initrd.gz auto=true priority=critical preseed/url=http://{{ pxe_server_ip }}/preseed-ubuntu.cfg
+{% endif %}
 
 LABEL local
   MENU LABEL Boot from ^local disk

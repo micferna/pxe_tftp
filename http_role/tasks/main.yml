@@ -1,0 +1,59 @@
+---
+# The whole role is gated on pxe_enable_autoinstall: automated installs erase
+# the target disk, so they are opt-in.
+- name: Automated install setup
+  when: pxe_enable_autoinstall | bool
+  block:
+    - name: Install the provisioning web server
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Create the web document root
+      ansible.builtin.file:
+        path: "{{ http_root }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy the nginx site for PXE provisioning
+      ansible.builtin.template:
+        src: nginx-pxe.conf.j2
+        dest: /etc/nginx/sites-available/pxe.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable the PXE provisioning site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/pxe.conf
+        dest: /etc/nginx/sites-enabled/pxe.conf
+        state: link
+      notify: Reload nginx
+
+    - name: Disable the default nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Generate preseed files
+      ansible.builtin.template:
+        src: preseed.cfg.j2
+        dest: "{{ http_root }}/preseed-{{ item.name }}.cfg"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ preseed_targets }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Ensure nginx is enabled and running
+      ansible.builtin.systemd:
+        name: nginx
+        enabled: true
+        state: started
