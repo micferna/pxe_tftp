@@ -59,6 +59,25 @@ cd pxe_tftp
 ansible-playbook -i inventaire.ini main.yml
 ```
 
+## Tests
+
+Validation statique (lancée aussi en CI) :
+
+```sh
+yamllint .
+ansible-lint
+```
+
+Test d'intégration avec **Molecule** : exécute le playbook dans des conteneurs
+Debian 12 et 13 et vérifie l'idempotence, la validité des configs Kea et le
+démarrage des services. Le démarrage PXE réseau lui-même reste à valider sur
+du matériel client.
+
+```sh
+pip install ansible "molecule-plugins[docker]" molecule
+molecule test
+```
+
 ## Fonctionnalités optionnelles
 
 ### Installation automatisée (preseed)

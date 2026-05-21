@@ -1,0 +1,4 @@
+---
+# Run the real playbook so the test exercises exactly what is deployed.
+- name: Converge
+  ansible.builtin.import_playbook: ../../main.yml

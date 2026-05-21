@@ -1,0 +1,34 @@
+---
+- name: Verify
+  hosts: pxe_servers
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Validate the deployed Kea DHCPv4 configuration
+      ansible.builtin.command: /usr/sbin/kea-dhcp4 -t /etc/kea/kea-dhcp4.conf
+      changed_when: false
+
+    - name: Collect service facts
+      ansible.builtin.service_facts:
+
+    - name: Assert core services are running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services[item ~ '.service'].state == 'running'
+        fail_msg: "Service {{ item }} is not running"
+      loop:
+        - kea-dhcp4-server
+        - tftpd-hpa
+
+    - name: Check that the PXE bootloaders are published
+      ansible.builtin.stat:
+        path: "/srv/tftp/{{ item }}"
+      register: pxe_boot_files
+      failed_when: not pxe_boot_files.stat.exists
+      loop:
+        - pxelinux.0
+        - pxelinux.cfg/default
+        - boot/grub/x86_64-efi/core.efi
+        - boot/grub/grub.cfg
+      loop_control:
+        label: "{{ item }}"
