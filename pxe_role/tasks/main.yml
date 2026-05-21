@@ -60,11 +60,29 @@
 - name: Configure the UEFI (GRUB) boot menu
   ansible.builtin.template:
     src: grub.cfg.j2
-    dest: "{{ tftp_root }}/boot/grub/grub.cfg"
+    dest: "{{ tftp_root }}/{{ item }}/grub.cfg"
     owner: root
     group: root
     mode: "{{ tftp_file_mode }}"
+  loop: "{{ ['boot/grub'] + (['grub'] if pxe_secureboot | bool else []) }}"
   when: pxe_enable_uefi | bool
+
+- name: Install Secure Boot signed bootloaders
+  ansible.builtin.apt:
+    name: "{{ pxe_secureboot_packages }}"
+    state: present
+  when: pxe_secureboot | bool
+
+- name: Publish the signed shim and GRUB bootloaders
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ tftp_root }}/{{ item.dest }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "{{ tftp_file_mode }}"
+  loop: "{{ pxe_secureboot_files }}"
+  when: pxe_secureboot | bool
 
 - name: Configure the tftpd-hpa daemon
   ansible.builtin.template:

@@ -15,6 +15,21 @@ pxe_packages:
 # Build UEFI (GRUB) boot support in addition to legacy BIOS.
 pxe_enable_uefi: true
 
+# Optional UEFI Secure Boot support: also publish Debian's signed shim and
+# GRUB so clients booting with Secure Boot enabled can netboot.
+# When enabling this, set pxe_bootfile_uefi to "bootx64.efi" in
+# group_vars/all/dhcp.yml so DHCP hands clients the signed shim.
+# NOTE: validate this on real hardware -- behaviour is firmware-specific.
+pxe_secureboot: false
+pxe_secureboot_packages:
+  - shim-signed
+  - grub-efi-amd64-signed
+pxe_secureboot_files:
+  - src: /usr/lib/shim/shimx64.efi.signed
+    dest: bootx64.efi
+  - src: /usr/lib/grub/x86_64-efi-signed/grubnetx64.efi.signed
+    dest: grubx64.efi
+
 # tftpd-hpa daemon options.
 # --secure chroots into TFTP_DIRECTORY; --create is intentionally omitted so
 # the service stays strictly read-only.
@@ -34,6 +49,7 @@ tftp_file_mode: "0644"
 pxe_tftp_dirs:
   - pxelinux.cfg
   - boot/grub
+  - grub
   - debian-installer/amd64
   - ubuntu-installer/amd64
 
@@ -53,8 +69,8 @@ pxe_bios_files:
 # Netboot installer images.
 # All URLs use HTTPS to prevent tampering in transit. To additionally pin
 # integrity, set "checksum" to "sha256:<hex>" (or sha512:...); an empty value
-# disables the check. Publish hashes change on every point release, so update
-# them whenever you bump a release.
+# disables the check. Published hashes change on every point release, so
+# update them whenever you bump a release.
 pxe_installer_files:
   - url: "https://deb.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux"
     dest: "debian-installer/amd64/linux"
